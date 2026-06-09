@@ -67,6 +67,25 @@ select {
   outline: 0;
 }
 
+select {
+  appearance: none;
+  padding-right: 36px;
+  background-color: color-mix(in srgb, var(--surface-strong) 86%, transparent);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-repeat: no-repeat;
+  background-size: 6px 6px, 6px 6px;
+}
+
+select option {
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
 textarea {
   resize: vertical;
 }

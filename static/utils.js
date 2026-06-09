@@ -8,14 +8,6 @@ function notify(message) {
   notify.timer = setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
-function debounce(fn, delay) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}
-
 function formatDate(value) {
   return new Intl.DateTimeFormat("zh-CN", {
     month: "2-digit",

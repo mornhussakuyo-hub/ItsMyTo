@@ -7,6 +7,8 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -22,22 +24,30 @@ type embeddingResponse struct {
 }
 
 func semanticMatch(query string, items []candidate, cfg EmbeddingConfig, add func(string, float64)) {
-	inputs := make([]string, 0, len(items)+1)
-	inputs = append(inputs, query)
-	for _, item := range items {
-		inputs = append(inputs, item.card.Name+"\n"+item.card.Description)
-	}
-	vectors, err := fetchEmbeddings(cfg, inputs)
-	if err != nil || len(vectors) != len(inputs) {
+	queryVector, err := queryEmbedding(cfg, query)
+	if err != nil {
 		return
 	}
-	queryVector := vectors[0]
-	for i, item := range items {
-		score := cosine(queryVector, vectors[i+1])
+	for _, item := range items {
+		if !cardHasEmbedding(item.card, cfg.Model) {
+			continue
+		}
+		score := cosine(queryVector, item.card.EmbeddingVector)
 		if score >= similarityFloor {
 			add(item.card.ID, 60+score)
 		}
 	}
+}
+
+func queryEmbedding(cfg EmbeddingConfig, query string) ([]float64, error) {
+	vectors, err := fetchEmbeddings(cfg, []string{query})
+	if err != nil {
+		return nil, err
+	}
+	if len(vectors) != 1 {
+		return nil, fmt.Errorf("embedding query returned %d vectors", len(vectors))
+	}
+	return vectors[0], nil
 }
 
 func fetchEmbeddings(cfg EmbeddingConfig, inputs []string) ([][]float64, error) {
@@ -45,7 +55,11 @@ func fetchEmbeddings(cfg EmbeddingConfig, inputs []string) ([][]float64, error) 
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(http.MethodPost, cfg.URL, bytes.NewReader(body))
+	endpoint, err := embeddingEndpoint(cfg.URL)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -61,11 +75,12 @@ func fetchEmbeddings(cfg EmbeddingConfig, inputs []string) ([][]float64, error) 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("embedding service status %d", resp.StatusCode)
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("embedding service status %d: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
 	}
 
 	var parsed embeddingResponse
-	if err := json.NewDecoder(io.LimitReader(resp.Body, maxBodyBytes)).Decode(&parsed); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, embeddingMaxBodyBytes)).Decode(&parsed); err != nil {
 		return nil, err
 	}
 	vectors := make([][]float64, 0, len(parsed.Data))
@@ -73,6 +88,22 @@ func fetchEmbeddings(cfg EmbeddingConfig, inputs []string) ([][]float64, error) 
 		vectors = append(vectors, item.Embedding)
 	}
 	return vectors, nil
+}
+
+func embeddingEndpoint(rawURL string) (string, error) {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return "", err
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return "", fmt.Errorf("invalid embedding url")
+	}
+	path := strings.TrimRight(parsed.Path, "/")
+	if !strings.HasSuffix(path, "/embeddings") {
+		path += "/embeddings"
+	}
+	parsed.Path = path
+	return parsed.String(), nil
 }
 
 func cosine(a, b []float64) float64 {

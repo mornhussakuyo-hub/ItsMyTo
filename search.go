@@ -13,6 +13,11 @@ func (s *Store) Search(query string, includeArchive bool) ([]CardDTO, error) {
 		return s.List(includeArchive)
 	}
 
+	cfg := s.EmbeddingConfig()
+	if cfg.ready() {
+		_ = s.PrecomputeEmbeddings(cfg, includeArchive)
+	}
+
 	candidates, err := s.searchCandidates(includeArchive)
 	if err != nil {
 		return nil, err
@@ -39,8 +44,7 @@ func (s *Store) Search(query string, includeArchive bool) ([]CardDTO, error) {
 		regexMatch(query, candidates, add)
 	}()
 
-	cfg := s.EmbeddingConfig()
-	if cfg.URL != "" && cfg.Model != "" {
+	if cfg.ready() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

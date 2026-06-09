@@ -48,7 +48,7 @@ func NewStore() (*Store, error) {
 		cardPath: filepath.Join(dir, cardStoreName),
 		setPath:  filepath.Join(dir, settingsName),
 		aead:     aead,
-		settings: StoredSettings{Theme: "system"},
+		settings: defaultSettings(),
 	}
 	if err := store.load(); err != nil {
 		return nil, err
@@ -69,7 +69,16 @@ func (s *Store) load() error {
 	if s.settings.Theme == "" {
 		s.settings.Theme = "system"
 	}
+	s.settings = normalizeSettings(s.settings)
 	return nil
+}
+
+func defaultSettings() StoredSettings {
+	return StoredSettings{
+		Theme:              "system",
+		EmbeddingBatchSize: defaultEmbeddingBatch,
+		EmbeddingMaxTokens: defaultEmbeddingTokens,
+	}
 }
 
 func readJSONFile(path string, value any) error {

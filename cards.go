@@ -51,9 +51,15 @@ func (s *Store) Create(input CardInput) (CardDTO, error) {
 	}
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.cards = append(s.cards, card)
-	return toDTO(card, maskKey(input.APIKey)), s.saveCardsLocked()
+	if err := s.saveCardsLocked(); err != nil {
+		s.mu.Unlock()
+		return CardDTO{}, err
+	}
+	s.mu.Unlock()
+
+	s.precomputeAllIfConfigured(true)
+	return toDTO(card, maskKey(input.APIKey)), nil
 }
 
 func (s *Store) Update(id string, input CardInput) (CardDTO, error) {
@@ -61,7 +67,6 @@ func (s *Store) Update(id string, input CardInput) (CardDTO, error) {
 		return CardDTO{}, err
 	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	for i, card := range s.cards {
 		if card.ID != id {
@@ -69,15 +74,20 @@ func (s *Store) Update(id string, input CardInput) (CardDTO, error) {
 		}
 		updated, err := s.applyCardUpdate(card, input)
 		if err != nil {
+			s.mu.Unlock()
 			return CardDTO{}, err
 		}
 		s.cards[i] = updated
 		if err := s.saveCardsLocked(); err != nil {
+			s.mu.Unlock()
 			return CardDTO{}, err
 		}
 		key, err := s.decryptCard(updated)
+		s.mu.Unlock()
+		s.precomputeAllIfConfigured(true)
 		return toDTO(updated, maskKey(key)), err
 	}
+	s.mu.Unlock()
 	return CardDTO{}, os.ErrNotExist
 }
 

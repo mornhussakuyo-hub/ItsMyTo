@@ -43,6 +43,7 @@ func (s *Server) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/cards/{id}/archive", s.handleArchiveCard)
 	mux.HandleFunc("POST /api/cards/{id}/reveal", s.handleRevealCard)
 	mux.HandleFunc("POST /api/search", s.handleSearch)
+	mux.HandleFunc("GET /api/search-stream", s.handleSearchStream)
 	mux.HandleFunc("GET /api/settings", s.handleGetSettings)
 	mux.HandleFunc("PUT /api/settings", s.handleUpdateSettings)
 	mux.HandleFunc("POST /api/open-url", s.handleOpenURL)

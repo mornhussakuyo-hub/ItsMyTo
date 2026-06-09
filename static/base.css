@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --bg: #fbf5e7;
   --surface: rgba(255, 252, 244, 0.84);
   --surface-strong: #fffaf0;
@@ -10,6 +10,10 @@
   --accent-strong: #6d3b0e;
   --danger: #b33838;
   --shadow: 0 20px 55px rgba(80, 56, 20, 0.14);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 :root[data-theme="dark"] {
@@ -122,7 +126,7 @@ h1 {
 
 .top-actions {
   display: grid;
-  grid-template-columns: 1fr 38px auto;
+  grid-template-columns: 1fr auto 38px auto;
   gap: 10px;
   align-items: center;
 }
@@ -158,6 +162,6 @@ h1 {
   }
 
   .top-actions {
-    grid-template-columns: 1fr 38px 88px;
+    grid-template-columns: 1fr 84px 38px 88px;
   }
 }

@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
 
 func (s *Server) handleListCards(w http.ResponseWriter, r *http.Request) {
 	items, err := s.store.List(r.URL.Query().Get("archive") == "1")
@@ -56,6 +60,38 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	items, err := s.store.Search(input.Query, input.IncludeArchive)
 	writeResult(w, items, err)
+}
+
+func (s *Server) handleSearchStream(w http.ResponseWriter, r *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeError(w, http.StatusInternalServerError, fmt.Errorf("streaming is not supported"))
+		return
+	}
+	query := r.URL.Query().Get("q")
+	includeArchive := r.URL.Query().Get("archive") == "1"
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	items, errs := s.store.StreamSearch(r.Context(), query, includeArchive)
+	for item := range items {
+		raw, err := json.Marshal(item)
+		if err != nil {
+			continue
+		}
+		_, _ = fmt.Fprintf(w, "event: card\ndata: %s\n\n", raw)
+		flusher.Flush()
+	}
+	if err := <-errs; err != nil {
+		raw, _ := json.Marshal(errorResponse{Error: err.Error()})
+		_, _ = fmt.Fprintf(w, "event: search-error\ndata: %s\n\n", raw)
+		flusher.Flush()
+		return
+	}
+	_, _ = fmt.Fprint(w, "event: done\ndata: {}\n\n")
+	flusher.Flush()
 }
 
 func (s *Server) handleGetSettings(w http.ResponseWriter, r *http.Request) {

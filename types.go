@@ -3,12 +3,15 @@ package main
 import "time"
 
 const (
-	appName         = "ItsMyTo"
-	keyFileName     = "master.key"
-	cardStoreName   = "cards.json"
-	settingsName    = "settings.json"
-	maxBodyBytes    = 1 << 20
-	similarityFloor = 0.62
+	appName                = "ItsMyTo"
+	keyFileName            = "master.key"
+	cardStoreName          = "cards.json"
+	settingsName           = "settings.json"
+	maxBodyBytes           = 1 << 20
+	embeddingMaxBodyBytes  = 64 << 20
+	defaultEmbeddingBatch  = 10
+	defaultEmbeddingTokens = 8192
+	similarityFloor        = 0.35
 )
 
 type Server struct {
@@ -16,21 +19,26 @@ type Server struct {
 }
 
 type StoredCard struct {
-	ID           string    `json:"id"`
-	Name         string    `json:"name"`
-	BaseURL      string    `json:"baseUrl"`
-	Description  string    `json:"description"`
-	DocURL       string    `json:"docUrl"`
-	APIKeyNonce  string    `json:"apiKeyNonce"`
-	APIKeyCipher string    `json:"apiKeyCipher"`
-	Archived     bool      `json:"archived"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	ID              string    `json:"id"`
+	Name            string    `json:"name"`
+	BaseURL         string    `json:"baseUrl"`
+	Description     string    `json:"description"`
+	DocURL          string    `json:"docUrl"`
+	APIKeyNonce     string    `json:"apiKeyNonce"`
+	APIKeyCipher    string    `json:"apiKeyCipher"`
+	EmbeddingModel  string    `json:"embeddingModel,omitempty"`
+	EmbeddingHash   string    `json:"embeddingHash,omitempty"`
+	EmbeddingVector []float64 `json:"embeddingVector,omitempty"`
+	Archived        bool      `json:"archived"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 type StoredSettings struct {
 	EmbeddingURL          string `json:"embeddingUrl"`
 	EmbeddingModel        string `json:"embeddingModel"`
+	EmbeddingBatchSize    int    `json:"embeddingBatchSize"`
+	EmbeddingMaxTokens    int    `json:"embeddingMaxTokens"`
 	EmbeddingAPIKeyNonce  string `json:"embeddingApiKeyNonce,omitempty"`
 	EmbeddingAPIKeyCipher string `json:"embeddingApiKeyCipher,omitempty"`
 	Theme                 string `json:"theme"`
@@ -61,6 +69,8 @@ type CardInput struct {
 type SettingsDTO struct {
 	EmbeddingURL       string `json:"embeddingUrl"`
 	EmbeddingModel     string `json:"embeddingModel"`
+	EmbeddingBatchSize int    `json:"embeddingBatchSize"`
+	EmbeddingMaxTokens int    `json:"embeddingMaxTokens"`
 	EmbeddingAPIKey    string `json:"embeddingApiKey,omitempty"`
 	HasEmbeddingAPIKey bool   `json:"hasEmbeddingApiKey"`
 	ClearEmbeddingKey  bool   `json:"clearEmbeddingKey,omitempty"`
@@ -78,9 +88,11 @@ type OpenURLRequest struct {
 }
 
 type EmbeddingConfig struct {
-	URL    string
-	Model  string
-	APIKey string
+	URL       string
+	Model     string
+	APIKey    string
+	BatchSize int
+	MaxTokens int
 }
 
 type candidate struct {

@@ -26,14 +26,15 @@
     <main class="app">
       <header class="topbar">
         <div>
-          <h1>ItsMyTo</h1>
-          <p>Local encrypted API key vault</p>
+          <h1>ItsMyTo!</h1>
+          <p>本地 API KEY 加密存储</p>
         </div>
         <div class="top-actions">
           <label class="search">
             <svg><use href="#i-search"/></svg>
             <input id="searchInput" autocomplete="off" placeholder="搜索名称、BaseURL、Key 或介绍" />
           </label>
+          <button class="primary-button" id="searchButton"><svg><use href="#i-search"/></svg><span>搜索</span></button>
           <button class="icon-button" id="settingsButton" title="设置" aria-label="设置"><svg><use href="#i-settings"/></svg></button>
           <button class="primary-button" id="newButton"><svg><use href="#i-plus"/></svg><span>新增</span></button>
         </div>
@@ -81,6 +82,8 @@
           <label class="full">Embedding API URL<input name="embeddingUrl" placeholder="OpenAI-compatible /embeddings endpoint" /></label>
           <label class="full">Embedding Model Name<input name="embeddingModel" placeholder="text-embedding-3-small" /></label>
           <label class="full">Embedding API Key<input name="embeddingApiKey" type="password" autocomplete="off" /></label>
+          <label>批次大小<input name="embeddingBatchSize" type="number" min="1" max="1000" step="1" placeholder="10" /></label>
+          <label>单批最大处理 Token 数<input name="embeddingMaxTokens" type="number" min="1" max="1000000" step="1" placeholder="8192" /></label>
           <div class="settings-stack full">
             <label>主题
               <select name="theme">

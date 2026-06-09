@@ -19,8 +19,10 @@ func (s *Store) EmbeddingConfig() EmbeddingConfig {
 	defer s.mu.RUnlock()
 
 	cfg := EmbeddingConfig{
-		URL:   s.settings.EmbeddingURL,
-		Model: s.settings.EmbeddingModel,
+		URL:       s.settings.EmbeddingURL,
+		Model:     s.settings.EmbeddingModel,
+		BatchSize: normalizedBatchSize(s.settings.EmbeddingBatchSize),
+		MaxTokens: normalizedMaxTokens(s.settings.EmbeddingMaxTokens),
 	}
 	if s.settings.EmbeddingAPIKeyNonce != "" && s.settings.EmbeddingAPIKeyCipher != "" {
 		key, err := s.decrypt(s.settings.EmbeddingAPIKeyNonce, s.settings.EmbeddingAPIKeyCipher)
@@ -44,10 +46,11 @@ func (s *Store) UpdateSettings(input SettingsDTO) (SettingsDTO, error) {
 	}
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	next := s.settings
 	next.EmbeddingURL = clean(input.EmbeddingURL)
 	next.EmbeddingModel = clean(input.EmbeddingModel)
+	next.EmbeddingBatchSize = normalizedBatchSize(input.EmbeddingBatchSize)
+	next.EmbeddingMaxTokens = normalizedMaxTokens(input.EmbeddingMaxTokens)
 	next.Theme = theme
 	next.Autostart = input.Autostart
 
@@ -57,6 +60,7 @@ func (s *Store) UpdateSettings(input SettingsDTO) (SettingsDTO, error) {
 	} else if input.EmbeddingAPIKey != "" {
 		nonce, cipherText, err := s.encrypt(input.EmbeddingAPIKey)
 		if err != nil {
+			s.mu.Unlock()
 			return SettingsDTO{}, err
 		}
 		next.EmbeddingAPIKeyNonce = nonce
@@ -65,19 +69,53 @@ func (s *Store) UpdateSettings(input SettingsDTO) (SettingsDTO, error) {
 
 	s.settings = next
 	if err := s.saveSettingsLocked(); err != nil {
+		s.mu.Unlock()
 		return SettingsDTO{}, err
 	}
-	return settingsDTO(s.settings), nil
+	output := settingsDTO(s.settings)
+	s.mu.Unlock()
+
+	s.precomputeAllIfConfigured(true)
+	return output, nil
 }
 
 func settingsDTO(settings StoredSettings) SettingsDTO {
+	settings = normalizeSettings(settings)
 	return SettingsDTO{
 		EmbeddingURL:       settings.EmbeddingURL,
 		EmbeddingModel:     settings.EmbeddingModel,
+		EmbeddingBatchSize: settings.EmbeddingBatchSize,
+		EmbeddingMaxTokens: settings.EmbeddingMaxTokens,
 		HasEmbeddingAPIKey: settings.EmbeddingAPIKeyCipher != "",
 		Theme:              settings.Theme,
 		Autostart:          settings.Autostart,
 	}
+}
+
+func normalizeSettings(settings StoredSettings) StoredSettings {
+	settings.EmbeddingBatchSize = normalizedBatchSize(settings.EmbeddingBatchSize)
+	settings.EmbeddingMaxTokens = normalizedMaxTokens(settings.EmbeddingMaxTokens)
+	return settings
+}
+
+func normalizedBatchSize(value int) int {
+	if value <= 0 {
+		return defaultEmbeddingBatch
+	}
+	if value > 1000 {
+		return 1000
+	}
+	return value
+}
+
+func normalizedMaxTokens(value int) int {
+	if value <= 0 {
+		return defaultEmbeddingTokens
+	}
+	if value > 1000000 {
+		return 1000000
+	}
+	return value
 }
 
 func setAutostart(enabled bool) error {

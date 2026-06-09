@@ -16,6 +16,8 @@ function openSettingsDialog() {
   state.settingsForm.reset();
   state.settingsForm.embeddingUrl.value = state.settings.embeddingUrl || "";
   state.settingsForm.embeddingModel.value = state.settings.embeddingModel || "";
+  state.settingsForm.embeddingBatchSize.value = state.settings.embeddingBatchSize || 10;
+  state.settingsForm.embeddingMaxTokens.value = state.settings.embeddingMaxTokens || 8192;
   state.settingsForm.embeddingApiKey.value = "";
   state.settingsForm.embeddingApiKey.placeholder = state.settings.hasEmbeddingApiKey
     ? "已配置，留空则保留"
@@ -50,7 +52,7 @@ function bindCardForm() {
         notify("卡片已创建");
       }
       state.cardDialog.close();
-      await refresh();
+      reloadCurrentView();
     } catch (error) {
       notify(error.message);
     }
@@ -64,6 +66,8 @@ function bindSettingsForm() {
     const payload = Object.fromEntries(form.entries());
     payload.autostart = form.get("autostart") === "on";
     payload.clearEmbeddingKey = form.get("clearEmbeddingKey") === "on";
+    payload.embeddingBatchSize = Number(payload.embeddingBatchSize || 10);
+    payload.embeddingMaxTokens = Number(payload.embeddingMaxTokens || 8192);
     try {
       state.settings = await request("/api/settings", { method: "PUT", body: payload });
       applyTheme();

@@ -4,6 +4,8 @@ const state = {
   filter: "active",
   editingId: null,
   revealCache: new Map(),
+  searchSeen: new Set(),
+  searchSource: null,
   cardsEl: $("#cards"),
   emptyEl: $("#empty"),
   cardDialog: $("#cardDialog"),
@@ -11,6 +13,7 @@ const state = {
   cardForm: $("#cardForm"),
   settingsForm: $("#settingsForm"),
   searchInput: $("#searchInput"),
+  searchButton: $("#searchButton"),
 };
 
 init();
@@ -28,7 +31,10 @@ function bindEvents() {
   bindTabs();
   bindCardForm();
   bindSettingsForm();
-  state.searchInput.addEventListener("input", debounce(refresh, 180));
+  state.searchButton.addEventListener("click", performSearch);
+  state.searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") performSearch();
+  });
 }
 
 function bindTabs() {
@@ -37,7 +43,11 @@ function bindTabs() {
       document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
       tab.classList.add("active");
       state.filter = tab.dataset.filter;
-      await refresh();
+      if (state.searchInput.value.trim()) {
+        performSearch();
+      } else {
+        await refresh();
+      }
     });
   });
 }

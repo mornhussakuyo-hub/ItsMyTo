@@ -79,7 +79,7 @@ async function archiveCard(card) {
     body: { archived: !card.archived },
   });
   notify(card.archived ? "已取消归档" : "已归档");
-  await refresh();
+  reloadCurrentView();
 }
 
 async function deleteCard(card) {
@@ -87,7 +87,7 @@ async function deleteCard(card) {
   await request(`/api/cards/${card.id}`, { method: "DELETE" });
   state.revealCache.delete(card.id);
   notify("卡片已删除");
-  await refresh();
+  reloadCurrentView();
 }
 
 async function openDoc(card) {
