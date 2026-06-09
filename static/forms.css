@@ -50,6 +50,11 @@ label.full {
   grid-column: 1 / -1;
 }
 
+.settings-stack {
+  display: grid;
+  gap: 12px;
+}
+
 input,
 textarea,
 select {
@@ -75,13 +80,19 @@ select:focus {
 .check {
   display: flex;
   align-items: center;
-  align-self: end;
   gap: 10px;
 }
 
 .check input {
   width: 16px;
   height: 16px;
+  flex: 0 0 16px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--text) 34%, var(--line));
+  border-radius: 3px;
+  background: var(--surface-strong);
+  accent-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--surface-strong) 70%, transparent);
 }
 
 .toast {

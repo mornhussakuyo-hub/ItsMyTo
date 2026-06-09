@@ -79,17 +79,19 @@
         </div>
         <div class="form-grid">
           <label class="full">Embedding API URL<input name="embeddingUrl" placeholder="OpenAI-compatible /embeddings endpoint" /></label>
-          <label class="full">模型名称<input name="embeddingModel" placeholder="text-embedding-3-small" /></label>
+          <label class="full">Embedding Model Name<input name="embeddingModel" placeholder="text-embedding-3-small" /></label>
           <label class="full">Embedding API Key<input name="embeddingApiKey" type="password" autocomplete="off" /></label>
-          <label>主题
-            <select name="theme">
-              <option value="system">跟随系统</option>
-              <option value="dark">深色</option>
-              <option value="light">浅色</option>
-            </select>
-          </label>
-          <label class="check"><input type="checkbox" name="autostart" /> 开机启动</label>
-          <label class="check full"><input type="checkbox" name="clearEmbeddingKey" /> 清除已保存的 Embedding API Key</label>
+          <div class="settings-stack full">
+            <label>主题
+              <select name="theme">
+                <option value="system">跟随系统</option>
+                <option value="dark">深色</option>
+                <option value="light">浅色</option>
+              </select>
+            </label>
+            <label class="check"><input type="checkbox" name="autostart" /> 开机启动</label>
+            <label class="check"><input type="checkbox" name="clearEmbeddingKey" /> 清除已保存的 Embedding API Key</label>
+          </div>
         </div>
         <div class="dialog-actions">
           <button type="button" class="ghost-button" data-close="settingsDialog">取消</button>
