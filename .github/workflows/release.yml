@@ -18,7 +18,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      - uses: msys2/setup-msys2@v2
+      - id: msys2
+        uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
@@ -27,14 +28,14 @@ jobs:
         shell: pwsh
         env:
           CGO_ENABLED: "1"
-          CC: C:\msys64\mingw64\bin\gcc.exe
-          CXX: C:\msys64\mingw64\bin\g++.exe
+          CC: ${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\gcc.exe
+          CXX: ${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\g++.exe
         run: go test -mod=vendor ./...
       - name: Build Windows GUI
         shell: pwsh
         env:
-          CC: C:\msys64\mingw64\bin\gcc.exe
-          CXX: C:\msys64\mingw64\bin\g++.exe
+          CC: ${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\gcc.exe
+          CXX: ${{ steps.msys2.outputs.msys2-location }}\mingw64\bin\g++.exe
         run: ./scripts/build-windows.ps1
       - uses: actions/upload-artifact@v4
         with:
