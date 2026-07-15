@@ -65,14 +65,15 @@ Linux：
 go build -mod=vendor -ldflags="-s -w" -o dist/itsmyto-linux-amd64 .
 ```
 
-Windows 交叉编译可使用 Zig：
+Windows 发布版使用 GUI 子系统构建，避免启动时显示额外的控制台窗口：
 
-```bash
-GOOS=windows GOARCH=amd64 CGO_ENABLED=1 \
-CC="zig cc -target x86_64-windows-gnu" \
-CXX="zig c++ -target x86_64-windows-gnu" \
-go build -mod=vendor -ldflags="-s -w -H=windowsgui" -o dist/itsmyto-windows-amd64.exe .
+```powershell
+$env:CC = "C:\msys64\mingw64\bin\gcc.exe"
+$env:CXX = "C:\msys64\mingw64\bin\g++.exe"
+.\scripts\build-windows.ps1
 ```
+
+构建脚本会检查生成文件的 PE 头，只有 Subsystem 为 `IMAGE_SUBSYSTEM_WINDOWS_GUI` 时才成功。推送 `v*` 标签后，GitHub Actions 会构建 Windows 和 Linux 产物、生成 SHA256 校验文件并发布 Release。
 
 ## Linux 依赖
 
